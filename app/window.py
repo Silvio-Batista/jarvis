@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.config import apps_config, settings
-from app.theme import COLORS, stylesheet
+from app.theme import COLORS, load_fonts, stylesheet
 from components.activity_feed import ActivityFeedPanel
 from components.applications import ApplicationsPanel
 from components.daily_overview import DailyOverviewPanel
@@ -26,7 +26,9 @@ from components.voice_interface import VoiceInterfacePanel
 from services.activity_manager import ActivityManager
 from services.application_manager import ApplicationManager
 from services.jarvis_service import JarvisService, JarvisState
+from services.reminder_service import ReminderService
 from services.system_monitor import SystemMonitor
+from services.task_manager import TaskManager
 from services.voice_runtime import VoiceRuntime
 
 
@@ -38,20 +40,21 @@ class GridBackground(QWidget):
     def paintEvent(self, event) -> None:  # noqa: N802
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(COLORS["bg"]))
-        pen = QPen(QColor(COLORS["grid"]))
+        # grid bem sutil (clean)
+        pen = QPen(QColor(16, 21, 31, 90))
         pen.setWidth(1)
         painter.setPen(pen)
-        step = 48
+        step = 64
         for x in range(0, self.width(), step):
             painter.drawLine(x, 0, x, self.height())
         for y in range(0, self.height(), step):
             painter.drawLine(0, y, self.width(), y)
 
-        accent = QPen(QColor(COLORS["cyan_dim"]))
+        accent = QPen(QColor(COLORS["red"]))
         accent.setWidth(1)
         painter.setPen(accent)
-        m = 10
-        length = 28
+        m = 12
+        length = 22
         painter.drawLine(m, m, m + length, m)
         painter.drawLine(m, m, m, m + length)
         painter.drawLine(self.width() - m, m, self.width() - m - length, m)
@@ -70,13 +73,16 @@ class JarvisWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.cfg = settings()
-        self.setWindowTitle(self.cfg.get("window_title", "JARVIS"))
+        load_fonts()
+        self.setWindowTitle(self.cfg.get("window_title", "TowerHub JARVIS"))
         self.setMinimumSize(1280, 800)
         self.setStyleSheet(stylesheet())
 
         self.monitor = SystemMonitor()
         self.activity = ActivityManager()
         self.apps = ApplicationManager(apps_config())
+        self.task_manager = TaskManager()
+        self.reminders = ReminderService(self.task_manager)
         self.jarvis = JarvisService()
         self.voice = VoiceRuntime()
 
@@ -100,6 +106,7 @@ class JarvisWindow(QMainWindow):
         self._fade.start()
 
         self.jarvis.set_state(JarvisState.IDLE)
+        self.reminders.start()
         QTimer.singleShot(400, self._start_voice)
 
     def _build_ui(self) -> None:
@@ -120,10 +127,13 @@ class JarvisWindow(QMainWindow):
         grid.setRowStretch(0, 1)
 
         user = self.cfg.get("user_name", "User")
-        mock = self.cfg.get("mock", {})
 
         self.system_panel = SystemStatusPanel()
-        self.daily_panel = DailyOverviewPanel(user, mock)
+        self.daily_panel = DailyOverviewPanel(
+            user,
+            self.task_manager,
+            on_toggle_task=self._on_task_toggle,
+        )
         self.core_panel = JarvisCorePanel()
         self.apps_panel = ApplicationsPanel(self.apps.list_apps(), self._launch_app)
         self.activity_panel = ActivityFeedPanel()
@@ -133,24 +143,24 @@ class JarvisWindow(QMainWindow):
         # Esquerda
         left_col = QVBoxLayout()
         left_col.setSpacing(12)
-        left_col.addWidget(self.system_panel, 3)
-        left_col.addWidget(self.apps_panel, 3)
+        left_col.addWidget(self.system_panel, 2)
+        left_col.addWidget(self.apps_panel, 2)
         left_wrap = QWidget()
         left_wrap.setLayout(left_col)
 
-        # Centro — cerebro em destaque
+        # Centro — cerebro + voz
         center_col = QVBoxLayout()
         center_col.setSpacing(12)
-        center_col.addWidget(self.core_panel, 4)
+        center_col.addWidget(self.core_panel, 3)
         center_col.addWidget(self.voice_panel, 2)
-        center_col.addWidget(self.daily_panel, 2)
         center_wrap = QWidget()
         center_wrap.setLayout(center_col)
 
-        # Direita
+        # Direita — dia dinamico + activity/actions
         right_col = QVBoxLayout()
         right_col.setSpacing(12)
-        right_col.addWidget(self.activity_panel, 3)
+        right_col.addWidget(self.daily_panel, 4)
+        right_col.addWidget(self.activity_panel, 2)
         right_col.addWidget(self.actions_panel, 2)
         right_wrap = QWidget()
         right_wrap.setLayout(right_col)
