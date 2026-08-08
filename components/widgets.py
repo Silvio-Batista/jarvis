@@ -15,8 +15,8 @@ def panel(title: str | None = None) -> tuple[QFrame, QVBoxLayout]:
     frame = QFrame()
     frame.setObjectName("Panel")
     layout = QVBoxLayout(frame)
-    layout.setContentsMargins(14, 14, 14, 14)
-    layout.setSpacing(10)
+    layout.setContentsMargins(16, 16, 16, 16)
+    layout.setSpacing(12)
     if title:
         label = QLabel(title)
         label.setObjectName("SectionTitle")

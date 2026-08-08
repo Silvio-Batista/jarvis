@@ -1,25 +1,7 @@
 {
   "user_name": "Silvio",
-  "window_title": "JARVIS — Just A Rather Very Intelligent System",
+  "window_title": "TowerHub · JARVIS",
   "start_maximized": true,
   "refresh_ms": 1000,
-  "theme": "hud_cyan",
-  "mock": {
-    "schedule": [
-      {
-        "time": "19:00",
-        "title": "Development",
-        "subtitle": "Project Alpha"
-      },
-      {
-        "time": "21:30",
-        "title": "Review",
-        "subtitle": "Pull requests"
-      }
-    ],
-    "tasks_total": 5,
-    "tasks_done": 4,
-    "focus": "Backend Development",
-    "productivity": 87
-  }
+  "theme": "towerhub_clean"
 }

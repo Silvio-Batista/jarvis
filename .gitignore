@@ -7,6 +7,7 @@ venv/
 .env.local
 temp/.spotify_token_cache
 .spotify_token_cache
+temp/tasks_state.json
 *.mp3
 *.wav
 .DS_Store

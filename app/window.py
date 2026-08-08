@@ -183,11 +183,13 @@ class JarvisWindow(QMainWindow):
         self.voice.ready.connect(self._on_voice_ready)
         self.voice.failed.connect(self._on_voice_failed)
         self.voice_panel.toggle_requested.connect(self.voice.toggle_session)
+        self.reminders.reminded.connect(self._on_reminder)
 
     def _bootstrap_logs(self) -> None:
-        self.activity.add("JARVIS", "System monitoring initialized", "jarvis")
-        self.activity.add("SYSTEM", "Network connection established", "system")
-        self.activity.add("JARVIS", "Command center online", "success")
+        plan = self.task_manager.plan_for()
+        self.activity.add("JARVIS", "TowerHub command center online", "success")
+        self.activity.add("SYSTEM", f"Day plan loaded · {plan.total} tasks", "system")
+        self.activity.add("JARVIS", "Reminders armed (Windows toast)", "jarvis")
         self.activity.add("JARVIS", "Voice starts in RESTING mode", "jarvis")
         self.activity_panel.set_events(self.activity.all())
 
@@ -201,6 +203,17 @@ class JarvisWindow(QMainWindow):
         snap = self.monitor.snapshot()
         self.system_panel.update_stats(snap)
         self.header.update_mini_stats(snap.cpu, snap.memory, snap.net_down_mbs)
+        # Atualiza o plano do dia a cada refresh leve (tarefas/agenda)
+        self.daily_panel.refresh()
+
+    def _on_task_toggle(self, task_id: str, done: bool) -> None:
+        status = "done" if done else "reopened"
+        self.activity.add("USER", f"Task {status}: {task_id}", "user")
+        self.activity_panel.set_events(self.activity.all())
+
+    def _on_reminder(self, title: str) -> None:
+        self.activity.add("JARVIS", f"Reminder: {title}", "warn")
+        self.activity_panel.set_events(self.activity.all())
         self.daily_panel.refresh()
 
     def _on_state(self, state: str) -> None:
@@ -236,6 +249,7 @@ class JarvisWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         self.voice.stop()
+        self.reminders.stop()
         super().closeEvent(event)
 
     def _launch_app(self, app: dict[str, Any]) -> None:
