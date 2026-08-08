@@ -188,7 +188,11 @@ class JarvisWindow(QMainWindow):
     def _bootstrap_logs(self) -> None:
         plan = self.task_manager.plan_for()
         self.activity.add("JARVIS", "TowerHub command center online", "success")
-        self.activity.add("SYSTEM", f"Day plan loaded · {plan.total} tasks", "system")
+        self.activity.add(
+            "SYSTEM",
+            f"MySQL day plan · {plan.date_key} · {plan.total} tasks",
+            "system",
+        )
         self.activity.add("JARVIS", "Reminders armed (Windows toast)", "jarvis")
         self.activity.add("JARVIS", "Voice starts in RESTING mode", "jarvis")
         self.activity_panel.set_events(self.activity.all())

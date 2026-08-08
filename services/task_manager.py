@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-import json
-from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
-ROOT = Path(__file__).resolve().parent.parent
-TASKS_PATH = ROOT / "config" / "tasks.json"
-STATE_PATH = ROOT / "temp" / "tasks_state.json"
+from services.database import db_cursor
 
 WEEKDAYS = [
     "monday",
@@ -22,21 +17,26 @@ WEEKDAYS = [
 ]
 
 
+def _fmt_time(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, timedelta):
+        total = int(value.total_seconds())
+        hours, rem = divmod(total, 3600)
+        minutes, _ = divmod(rem, 60)
+        return f"{hours:02d}:{minutes:02d}"
+    if isinstance(value, time):
+        return value.strftime("%H:%M")
+    text = str(value)
+    return text[:5] if len(text) >= 5 else text
+
+
 @dataclass
 class TaskItem:
     id: str
     title: str
     remind_at: str | None
     done: bool = False
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "TaskItem":
-        return cls(
-            id=str(data.get("id") or data.get("title")),
-            title=str(data.get("title", "Tarefa")),
-            remind_at=data.get("remind_at"),
-            done=bool(data.get("done", False)),
-        )
 
 
 @dataclass
@@ -70,59 +70,99 @@ class DayPlan:
 
 
 class TaskManager:
-    def __init__(self, path: Path | None = None) -> None:
-        self.path = path or TASKS_PATH
-        self._raw = self._load_raw()
-        self._state = self._load_state()
+    """Tarefas e agenda dinamicas via MySQL (banco `jarvis`)."""
 
-    def _load_raw(self) -> dict[str, Any]:
-        if not self.path.exists():
-            return {"recurring": {}, "dates": {}, "defaults": {}}
-        with self.path.open(encoding="utf-8") as file:
-            return json.load(file)
+    def ensure_day(self, when: datetime | None = None) -> date:
+        """Materializa o dia a partir do template recorrente, se ainda nao existir."""
+        when = when or datetime.now()
+        plan_date = when.date()
+        weekday = when.weekday()  # 0=monday
 
-    def _load_state(self) -> dict[str, Any]:
-        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        if not STATE_PATH.exists():
-            return {"done": {}, "notified": {}}
-        try:
-            return json.loads(STATE_PATH.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            return {"done": {}, "notified": {}}
+        with db_cursor() as cur:
+            cur.execute("SELECT id, focus FROM day_plans WHERE plan_date=%s", (plan_date,))
+            day = cur.fetchone()
+            if day:
+                return plan_date
 
-    def _save_state(self) -> None:
-        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        STATE_PATH.write_text(
-            json.dumps(self._state, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+            cur.execute(
+                "SELECT focus FROM recurring_plans WHERE weekday=%s",
+                (weekday,),
+            )
+            rec = cur.fetchone()
+            focus = rec["focus"] if rec else "Focus"
+            cur.execute(
+                "INSERT INTO day_plans (plan_date, focus) VALUES (%s, %s)",
+                (plan_date, focus),
+            )
 
-    def reload(self) -> None:
-        self._raw = self._load_raw()
+            cur.execute(
+                "SELECT time_at, title, subtitle FROM recurring_schedule WHERE weekday=%s",
+                (weekday,),
+            )
+            for item in cur.fetchall():
+                cur.execute(
+                    "INSERT INTO day_schedule (plan_date, time_at, title, subtitle) "
+                    "VALUES (%s, %s, %s, %s)",
+                    (plan_date, item["time_at"], item["title"], item["subtitle"]),
+                )
+
+            cur.execute(
+                "SELECT title, remind_at, sort_order FROM recurring_tasks "
+                "WHERE weekday=%s ORDER BY sort_order, id",
+                (weekday,),
+            )
+            for item in cur.fetchall():
+                cur.execute(
+                    "INSERT INTO tasks (plan_date, title, remind_at, sort_order) "
+                    "VALUES (%s, %s, %s, %s)",
+                    (plan_date, item["title"], item["remind_at"], item["sort_order"]),
+                )
+        return plan_date
 
     def plan_for(self, when: datetime | None = None) -> DayPlan:
         when = when or datetime.now()
-        date_key = when.strftime("%Y-%m-%d")
+        plan_date = self.ensure_day(when)
         weekday = WEEKDAYS[when.weekday()]
-        defaults = self._raw.get("defaults") or {}
 
-        base = deepcopy(self._raw.get("recurring", {}).get(weekday) or {})
-        override = deepcopy(self._raw.get("dates", {}).get(date_key) or {})
+        with db_cursor() as cur:
+            cur.execute(
+                "SELECT focus FROM day_plans WHERE plan_date=%s",
+                (plan_date,),
+            )
+            day = cur.fetchone()
+            focus = day["focus"] if day else "Focus"
 
-        focus = override.get("focus") or base.get("focus") or defaults.get("focus") or "Focus"
-        schedule = override.get("schedule") or base.get("schedule") or []
-        tasks_raw = override.get("tasks") or base.get("tasks") or []
+            cur.execute(
+                "SELECT time_at, title, subtitle FROM day_schedule "
+                "WHERE plan_date=%s ORDER BY time_at, id",
+                (plan_date,),
+            )
+            schedule = [
+                {
+                    "time": _fmt_time(row["time_at"]) or "--:--",
+                    "title": row["title"],
+                    "subtitle": row.get("subtitle") or "",
+                }
+                for row in cur.fetchall()
+            ]
 
-        done_map = self._state.get("done", {}).get(date_key, {})
-        tasks: list[TaskItem] = []
-        for item in tasks_raw:
-            task = TaskItem.from_dict(item)
-            if task.id in done_map:
-                task.done = bool(done_map[task.id])
-            tasks.append(task)
+            cur.execute(
+                "SELECT id, title, remind_at, done FROM tasks "
+                "WHERE plan_date=%s ORDER BY sort_order, id",
+                (plan_date,),
+            )
+            tasks = [
+                TaskItem(
+                    id=str(row["id"]),
+                    title=row["title"],
+                    remind_at=_fmt_time(row["remind_at"]),
+                    done=bool(row["done"]),
+                )
+                for row in cur.fetchall()
+            ]
 
         return DayPlan(
-            date_key=date_key,
+            date_key=plan_date.isoformat(),
             weekday=weekday,
             focus=focus,
             schedule=schedule,
@@ -130,28 +170,81 @@ class TaskManager:
         )
 
     def mark_done(self, task_id: str, done: bool = True, when: datetime | None = None) -> None:
+        with db_cursor() as cur:
+            cur.execute(
+                "UPDATE tasks SET done=%s WHERE id=%s",
+                (1 if done else 0, int(task_id)),
+            )
+
+    def add_task(
+        self,
+        title: str,
+        remind_at: str | None = None,
+        when: datetime | None = None,
+    ) -> int:
         when = when or datetime.now()
-        date_key = when.strftime("%Y-%m-%d")
-        self._state.setdefault("done", {}).setdefault(date_key, {})[task_id] = done
-        self._save_state()
+        plan_date = self.ensure_day(when)
+        remind_value = None
+        if remind_at:
+            parts = remind_at.split(":")
+            remind_value = time(int(parts[0]), int(parts[1]))
+
+        with db_cursor() as cur:
+            cur.execute(
+                "SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order "
+                "FROM tasks WHERE plan_date=%s",
+                (plan_date,),
+            )
+            order = cur.fetchone()["next_order"]
+            cur.execute(
+                "INSERT INTO tasks (plan_date, title, remind_at, sort_order) "
+                "VALUES (%s, %s, %s, %s)",
+                (plan_date, title, remind_value, order),
+            )
+            return int(cur.lastrowid)
+
+    def delete_task(self, task_id: str) -> None:
+        with db_cursor() as cur:
+            cur.execute("DELETE FROM tasks WHERE id=%s", (int(task_id),))
+
+    def set_focus(self, focus: str, when: datetime | None = None) -> None:
+        when = when or datetime.now()
+        plan_date = self.ensure_day(when)
+        with db_cursor() as cur:
+            cur.execute(
+                "UPDATE day_plans SET focus=%s WHERE plan_date=%s",
+                (focus, plan_date),
+            )
 
     def due_reminders(self, when: datetime | None = None) -> list[TaskItem]:
         when = when or datetime.now()
-        plan = self.plan_for(when)
-        now_hm = when.strftime("%H:%M")
-        notified = self._state.setdefault("notified", {}).setdefault(plan.date_key, [])
-        due: list[TaskItem] = []
-        for task in plan.tasks:
-            if task.done or not task.remind_at:
-                continue
-            if task.remind_at <= now_hm and task.id not in notified:
-                due.append(task)
-        return due
+        plan_date = self.ensure_day(when)
+        now_time = when.time().replace(second=0, microsecond=0)
+
+        with db_cursor() as cur:
+            cur.execute(
+                "SELECT id, title, remind_at, done FROM tasks "
+                "WHERE plan_date=%s AND done=0 AND notified=0 AND remind_at IS NOT NULL "
+                "AND remind_at <= %s ORDER BY remind_at, id",
+                (plan_date, now_time),
+            )
+            return [
+                TaskItem(
+                    id=str(row["id"]),
+                    title=row["title"],
+                    remind_at=_fmt_time(row["remind_at"]),
+                    done=False,
+                )
+                for row in cur.fetchall()
+            ]
 
     def mark_notified(self, task_id: str, when: datetime | None = None) -> None:
-        when = when or datetime.now()
-        date_key = when.strftime("%Y-%m-%d")
-        bucket = self._state.setdefault("notified", {}).setdefault(date_key, [])
-        if task_id not in bucket:
-            bucket.append(task_id)
-            self._save_state()
+        with db_cursor() as cur:
+            cur.execute(
+                "UPDATE tasks SET notified=1 WHERE id=%s",
+                (int(task_id),),
+            )
+
+    def reload(self) -> None:
+        """Compat: nada a cachear — sempre le do MySQL."""
+        return None

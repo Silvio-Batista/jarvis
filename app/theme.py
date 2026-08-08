@@ -208,6 +208,17 @@ def stylesheet() -> str:
         background-color: {c['red']};
         border-radius: 4px;
     }}
+    QLineEdit#CleanInput {{
+        background-color: {c['bg_card']};
+        color: {c['white']};
+        border: 1px solid {c['border_soft']};
+        border-radius: 8px;
+        padding: 8px 10px;
+        selection-background-color: {c['red']};
+    }}
+    QLineEdit#CleanInput:focus {{
+        border: 1px solid {c['red']};
+    }}
     QScrollArea {{
         border: none;
         background: transparent;

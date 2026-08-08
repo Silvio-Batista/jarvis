@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -88,7 +89,26 @@ class DailyOverviewPanel(QWidget):
         scroll.setMinimumHeight(120)
         body.addWidget(scroll, 1)
 
-        hint = QLabel("Clique na tarefa para marcar como feita · lembretes no Windows")
+        add_row = QHBoxLayout()
+        add_row.setSpacing(8)
+        self.input_title = QLineEdit()
+        self.input_title.setPlaceholderText("Nova tarefa...")
+        self.input_title.setObjectName("CleanInput")
+        self.input_remind = QLineEdit()
+        self.input_remind.setPlaceholderText("HH:MM")
+        self.input_remind.setFixedWidth(70)
+        self.input_remind.setObjectName("CleanInput")
+        self.btn_add = QPushButton("ADD")
+        self.btn_add.setObjectName("ActionBtn")
+        self.btn_add.setFixedWidth(64)
+        self.btn_add.clicked.connect(self._add_task)
+        self.input_title.returnPressed.connect(self._add_task)
+        add_row.addWidget(self.input_title, 1)
+        add_row.addWidget(self.input_remind)
+        add_row.addWidget(self.btn_add)
+        body.addLayout(add_row)
+
+        hint = QLabel("MySQL · clique para concluir · lembretes no Windows")
         hint.setObjectName("Muted")
         hint.setStyleSheet("color: #6b7c90; font-size: 10px;")
         body.addWidget(hint)
@@ -147,7 +167,7 @@ class DailyOverviewPanel(QWidget):
                 w.deleteLater()
 
         if not plan.tasks:
-            empty = QLabel("Nenhuma tarefa para hoje. Edite config/tasks.json")
+            empty = QLabel("Nenhuma tarefa para hoje. Adicione abaixo.")
             empty.setObjectName("Muted")
             self.tasks_layout.insertWidget(0, empty)
             return
@@ -170,4 +190,22 @@ class DailyOverviewPanel(QWidget):
         self.tasks.mark_done(task_id, done=done)
         if self.on_toggle_task:
             self.on_toggle_task(task_id, done)
+        self.refresh()
+
+    def _add_task(self) -> None:
+        title = self.input_title.text().strip()
+        if not title:
+            return
+        remind = self.input_remind.text().strip() or None
+        if remind and len(remind) == 4 and remind.isdigit():
+            remind = f"{remind[:2]}:{remind[2:]}"
+        try:
+            self.tasks.add_task(title, remind_at=remind)
+        except Exception:
+            # horario invalido — grava sem lembrete
+            self.tasks.add_task(title, remind_at=None)
+        self.input_title.clear()
+        self.input_remind.clear()
+        if self.on_toggle_task:
+            self.on_toggle_task("new", False)
         self.refresh()
