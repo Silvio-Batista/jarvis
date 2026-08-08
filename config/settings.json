@@ -1,0 +1,25 @@
+{
+  "user_name": "Silvio",
+  "window_title": "JARVIS — Just A Rather Very Intelligent System",
+  "start_maximized": true,
+  "refresh_ms": 1000,
+  "theme": "hud_cyan",
+  "mock": {
+    "schedule": [
+      {
+        "time": "19:00",
+        "title": "Development",
+        "subtitle": "Project Alpha"
+      },
+      {
+        "time": "21:30",
+        "title": "Review",
+        "subtitle": "Pull requests"
+      }
+    ],
+    "tasks_total": 5,
+    "tasks_done": 4,
+    "focus": "Backend Development",
+    "productivity": 87
+  }
+}

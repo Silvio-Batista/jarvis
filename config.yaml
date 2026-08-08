@@ -1,0 +1,47 @@
+assistente:
+  nome: Jarvis
+  wake_words:
+    - jarvis
+    - jávis
+    - javis
+  idioma_stt: pt-BR
+
+  # Voz Edge (gratis). Julio precisa de Azure — use voz_preset: julio + .env
+  voz_preset: jarvis_robot
+  # Mais rapido: ajuste velocidade_tts (ex: "+45%")
+  # velocidade_tts: "+45%"
+  # tom_tts: "-35Hz"
+
+  microfone: fifine
+  taxa_amostragem: null
+  max_segundos_fala: 4.0
+  silencio_para_parar: 0.50
+  espera_fala: 2.5
+
+  # false = fala direto, sem precisar dizer "Jarvis"
+  # true  = so age se ouvir a wake word
+  exigir_wake_word: false
+  segundos_atento: 30
+
+vozes_custom:
+  # Exemplo se quiser outra voz Azure:
+  # humberto:
+  #   voice: pt-BR-HumbertoNeural
+  #   rate: "+10%"
+  #   pitch: "+0Hz"
+  #   engine: azure
+
+acoes:
+  apps:
+    chrome: chrome
+    google chrome: chrome
+    google: chrome
+    navegador: chrome
+    edge: msedge
+    spotify: spotify
+    discord: discord
+    vscode: code
+    calculadora: calc
+    bloco de notas: notepad
+    explorador: explorer
+    configuracoes: "ms-settings:"

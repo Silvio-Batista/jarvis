@@ -1,0 +1,104 @@
+{
+  "timezone_note": "Horarios em HH:MM (24h). Lembretes disparam como notificacao do Windows.",
+  "defaults": {
+    "focus": "Deep work",
+    "productivity_base": 70
+  },
+  "recurring": {
+    "monday": {
+      "focus": "Planejamento da semana",
+      "schedule": [
+        {"time": "09:30", "title": "Daily standup", "subtitle": "Alinhamento do time"},
+        {"time": "14:00", "title": "Deep work", "subtitle": "Features prioritarias"}
+      ],
+      "tasks": [
+        {"id": "mon-1", "title": "Revisar backlog", "remind_at": "10:00", "done": false},
+        {"id": "mon-2", "title": "Responder e-mails", "remind_at": "11:30", "done": false},
+        {"id": "mon-3", "title": "Commit do dia", "remind_at": "18:00", "done": false}
+      ]
+    },
+    "tuesday": {
+      "focus": "Desenvolvimento",
+      "schedule": [
+        {"time": "10:00", "title": "Coding session", "subtitle": "JARVIS / projetos"},
+        {"time": "16:00", "title": "Code review", "subtitle": "PRs abertas"}
+      ],
+      "tasks": [
+        {"id": "tue-1", "title": "Avancar feature principal", "remind_at": "10:30", "done": false},
+        {"id": "tue-2", "title": "Testes manuais", "remind_at": "15:00", "done": false}
+      ]
+    },
+    "wednesday": {
+      "focus": "Integracoes",
+      "schedule": [
+        {"time": "11:00", "title": "Sync com APIs", "subtitle": "Spotify / Azure"},
+        {"time": "17:00", "title": "Documentacao", "subtitle": "Notas do projeto"}
+      ],
+      "tasks": [
+        {"id": "wed-1", "title": "Atualizar README mental do Jarvis", "remind_at": "12:00", "done": false},
+        {"id": "wed-2", "title": "Backup configs", "remind_at": "18:30", "done": false}
+      ]
+    },
+    "thursday": {
+      "focus": "Polimento",
+      "schedule": [
+        {"time": "09:00", "title": "Bugfix", "subtitle": "Issues abertas"},
+        {"time": "15:30", "title": "UI polish", "subtitle": "Painel JARVIS"}
+      ],
+      "tasks": [
+        {"id": "thu-1", "title": "Corrigir 2 bugs", "remind_at": "11:00", "done": false},
+        {"id": "thu-2", "title": "Melhorar voz / STT", "remind_at": "16:00", "done": false}
+      ]
+    },
+    "friday": {
+      "focus": "Entrega",
+      "schedule": [
+        {"time": "10:00", "title": "Fechar sprint", "subtitle": "Checklist"},
+        {"time": "16:00", "title": "Retrospectiva", "subtitle": "O que melhorar"}
+      ],
+      "tasks": [
+        {"id": "fri-1", "title": "Deploy / build final", "remind_at": "14:00", "done": false},
+        {"id": "fri-2", "title": "Planejar proxima semana", "remind_at": "17:30", "done": false}
+      ]
+    },
+    "saturday": {
+      "focus": "Projeto pessoal — JARVIS",
+      "schedule": [
+        {"time": "10:00", "title": "Build session", "subtitle": "TowerHub / JARVIS"},
+        {"time": "15:00", "title": "Experimentos", "subtitle": "Voz, UI, automacoes"}
+      ],
+      "tasks": [
+        {"id": "sat-1", "title": "Polir painel JARVIS", "remind_at": "11:00", "done": false},
+        {"id": "sat-2", "title": "Configurar lembretes do dia", "remind_at": "14:00", "done": false},
+        {"id": "sat-3", "title": "Testar notificacoes Windows", "remind_at": "16:30", "done": false},
+        {"id": "sat-4", "title": "Pausa / descanso", "remind_at": "18:00", "done": false}
+      ]
+    },
+    "sunday": {
+      "focus": "Descanso + ideias",
+      "schedule": [
+        {"time": "11:00", "title": "Leitura / estudo", "subtitle": "Conteudo tecnico"},
+        {"time": "17:00", "title": "Organizar semana", "subtitle": "Notas soltas"}
+      ],
+      "tasks": [
+        {"id": "sun-1", "title": "Revisar metas da semana", "remind_at": "12:00", "done": false},
+        {"id": "sun-2", "title": "Listar ideias pro Jarvis", "remind_at": "18:00", "done": false}
+      ]
+    }
+  },
+  "dates": {
+    "2026-08-08": {
+      "focus": "Command Center TowerHub",
+      "schedule": [
+        {"time": "18:00", "title": "UI polish", "subtitle": "Logo + fontes + clean"},
+        {"time": "20:00", "title": "Lembretes", "subtitle": "Notificacoes Windows"}
+      ],
+      "tasks": [
+        {"id": "2026-08-08-1", "title": "Aplicar logo TowerHub no painel", "remind_at": "18:50", "done": false},
+        {"id": "2026-08-08-2", "title": "Deixar visual mais clean", "remind_at": "19:10", "done": false},
+        {"id": "2026-08-08-3", "title": "Testar notificacao de tarefa", "remind_at": "19:30", "done": false},
+        {"id": "2026-08-08-4", "title": "Ativar Jarvis e pedir um app", "remind_at": "20:00", "done": false}
+      ]
+    }
+  }
+}

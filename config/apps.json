@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Visual Studio Code",
+    "command": "code",
+    "category": "development",
+    "label": "VS CODE"
+  },
+  {
+    "name": "Windows Terminal",
+    "command": "wt",
+    "category": "system",
+    "label": "TERMINAL"
+  },
+  {
+    "name": "Microsoft Edge",
+    "command": "msedge",
+    "category": "web",
+    "label": "BROWSER"
+  },
+  {
+    "name": "Spotify",
+    "command": "spotify",
+    "category": "media",
+    "label": "SPOTIFY"
+  },
+  {
+    "name": "Discord",
+    "command": "discord",
+    "category": "social",
+    "label": "DISCORD"
+  },
+  {
+    "name": "GitHub",
+    "command": "https://github.com",
+    "category": "development",
+    "label": "GITHUB"
+  },
+  {
+    "name": "Docker Desktop",
+    "command": "Docker Desktop",
+    "category": "devops",
+    "label": "DOCKER"
+  }
+]
